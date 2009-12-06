@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+# -*- coding: utf-8 -*-
+
+require 'rubygems'
+require 'g'
+require 'time'
+require 'rubygems'
+require 'kconv'
+require 'fastercsv'
+
+require 'activerecord'
+require 'sqlite3'
+
+DUMPTTER_DIR="#{ENV['HOME']}/.dumptter"
+M_LAST_FILE="#{DUMPTTER_DIR}/.monetter.last"
+M_CSV="#{DUMPTTER_DIR}/monetter.csv"
+DB_FILE="#{DUMPTTER_DIR}/dumptter.db"
+
+errors = []
+
+ActiveRecord::Base.establish_connection(
+                                        :adapter => 'sqlite3',
+                                        :database  => DB_FILE
+                                        )
+
+def check_errors(errors)
+  if errors.size > 0
+    errors.each{|error|
+      print "Error: #{error}\n"
+    }
+    exit
+  end
+end
+
+if FileTest.exist?(DUMPTTER_DIR)
+  if FileTest::directory?(DUMPTTER_DIR)
+  else
+    errors << "'#{DUMPTTER_DIR}/' is not a directory."
+  end
+else
+  Dir.mkdir("#{DUMPTTER_DIR}")
+end
+check_errors(errors)
+
+if FileTest.exist?(DB_FILE)
+  if FileTest::file?(DB_FILE)
+  else
+    errors << "'#{DB_FILE}' is not a file."
+  end
+else
+  erros << "Please setup dumptter. Before using #{__FILE__}"
+  exit 1
+end
+
+class Status < ActiveRecord::Base
+end
+
+if ARGV[0] && ARGV[0].size > 0
+  puts search_term = ARGV[0]
+  csv = FasterCSV.open(DUMPTTER_DIR + '/' + search_term + '.csv', "w")
+else
+  csv = FasterCSV.open(M_CSV, "w")
+end
+
+unless search_term
+  statuses = Status.find(:all, :order=>"status_at", :conditions => ["(status_text LIKE ?)", '%円%'])
+  statuses.each do |s|
+    datetime = s.status_at.strftime("%Y%m%d%H%M%S")
+    puts s.status_text
+    if s.status_text =~/(\d{1,3}((,\d{3}){0,2})|\d+)\s*(兆|億|万|千|百|十)?(円|yen|JPY)/
+      m_jissu = $1
+      m_jissu.delete!(',')
+#      puts m_jissu
+      csv << [datetime,$1,s.status_text.tosjis]
+    end
+  end
+else
+  statuses = Status.find(:all, :order=>"status_at", :conditions => ["(status_text LIKE ?)", "%#{search_term}%"])
+  statuses.each do |s|
+    datetime = s.status_at.strftime("%Y%m%d%H%M%S")
+#    puts datetime,search_term,s.status_text.tosjis
+    csv << [datetime,search_term.tosjis,s.status_text.tosjis]
+  end
+end
+
+g "Picked: #{statuses.size} articles" 
+
+csv.close

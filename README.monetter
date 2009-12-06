@@ -1,0 +1,46 @@
+= Script of "monetter"
+
+This script picks word from your tweets, and makes CSV file.
+
+= DEPENDENCY
+
+This library uses the following external Ruby libraries.
+
+  highline
+ 'g'
+ 'time'
+ 'kconv'
+ 'fastercsv'
+
+  activerecord
+  sqlite3
+
+You can install them using gem.
+
+  sudo gem install activerecord
+  sudo gem install sqlite3-ruby
+  sudo gem install g fastercsv
+
+Before using "monetter", plese setup "dumptter".
+
+= SYNOPSIS
+
+== How to Run This Script
+
+Just execute the following command:
+
+  $ ruby /path/to/monetter [search word]
+
+If you don't set "search word", monetter picks "円/JPY/yen" as default word.
+
+  examle$: ruby /path/to/monetter debian
+
+This script will create $HOME/.dumptter/search_word.csv
+
+Of course, you can run "monetter" by
+
+  $ monetter
+
+when you copy "monetter" to the directory included in PATH
+and make it executable by using chmod.
+
